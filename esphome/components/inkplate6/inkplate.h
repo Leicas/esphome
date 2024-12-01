@@ -92,6 +92,8 @@ class Inkplate6 : public display::DisplayBuffer, public i2c::I2CDevice {
     if (this->is_ready())
       this->initialize_();
   }
+  void set_flip_y(bool flip_y) { this->flip_y_ = flip_y; }
+
   void set_partial_updating(bool partial_updating) { this->partial_updating_ = partial_updating; }
   void set_full_update_every(uint32_t full_update_every) { this->full_update_every_ = full_update_every; }
 
@@ -221,6 +223,7 @@ class Inkplate6 : public display::DisplayBuffer, public i2c::I2CDevice {
 
   bool block_partial_{true};
   bool greyscale_;
+  bool flip_y_;
   bool partial_updating_;
 
   InkplateModel model_;

@@ -35,7 +35,7 @@ CONF_POWERUP_PIN = "powerup_pin"
 CONF_SPH_PIN = "sph_pin"
 CONF_SPV_PIN = "spv_pin"
 CONF_VCOM_PIN = "vcom_pin"
-
+CONF_FLIP_Y = "flip_y"
 
 inkplate6_ns = cg.esphome_ns.namespace("inkplate6")
 Inkplate6 = inkplate6_ns.class_(
@@ -62,6 +62,7 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(Inkplate6),
             cv.Optional(CONF_GREYSCALE, default=False): cv.boolean,
+            cv.Optional(CONF_FLIP_Y, default=False): cv.boolean,
             cv.Optional(CONF_PARTIAL_UPDATING, default=True): cv.boolean,
             cv.Optional(CONF_FULL_UPDATE_EVERY, default=10): cv.uint32_t,
             cv.Optional(CONF_MODEL, default="inkplate_6"): cv.enum(
@@ -126,6 +127,7 @@ async def to_code(config):
         cg.add(var.set_writer(lambda_))
 
     cg.add(var.set_greyscale(config[CONF_GREYSCALE]))
+    cg.add(var.set_flip_y(config[CONF_FLIP_Y]))
     cg.add(var.set_partial_updating(config[CONF_PARTIAL_UPDATING]))
     cg.add(var.set_full_update_every(config[CONF_FULL_UPDATE_EVERY]))
 

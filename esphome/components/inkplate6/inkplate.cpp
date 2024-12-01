@@ -156,6 +156,9 @@ void HOT Inkplate6::draw_absolute_pixel_internal(int x, int y, Color color) {
   if (x >= this->get_width_internal() || y >= this->get_height_internal() || x < 0 || y < 0)
     return;
 
+  if (this->flip_y_)
+    y = this->get_height_internal() - y - 1;
+
   if (this->greyscale_) {
     int x1 = x / 2;
     int x_sub = x % 2;
