@@ -43,6 +43,12 @@ uart:
 neato_uart:
   id: neato_device
   uart_id: uart_bus
+  time_id: homeassistant_time
+
+# Time component for tracking cleaning sessions
+time:
+  - platform: homeassistant
+    id: homeassistant_time
 
 # Define sensors using the component's platform
 sensor:
@@ -67,6 +73,8 @@ sensor:
       name: "Filter Change Time"
     brush_change_time:
       name: "Brush Change Time"
+    last_cleaning_duration:
+      name: "Last Cleaning Duration"
 
 # Binary sensors for status information
 binary_sensor:
@@ -102,6 +110,10 @@ text_sensor:
       name: "Serial Number"
     mainboard_version:
       name: "Mainboard Version"
+    last_cleaning_time:
+      name: "Last Cleaning Time"
+    last_cleaning_type:
+      name: "Last Cleaning Type"
 
 # Buttons for vacuum control
 button:

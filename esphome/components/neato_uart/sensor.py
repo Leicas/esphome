@@ -31,6 +31,7 @@ CONF_BRUSH_CHANGE_TIME = "brush_change_time"
 CONF_DIRT_BIN_ALERT = "dirt_bin_alert"
 CONF_CURRENT_DIRT_BIN_RUNTIME = "current_dirt_bin_runtime"
 CONF_NUMBER_DUST_BIN_FULL = "number_dust_bin_full"
+CONF_LAST_CLEANING_DURATION = "last_cleaning_duration"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -105,6 +106,11 @@ CONFIG_SCHEMA = cv.Schema(
             accuracy_decimals=0,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
+        cv.Optional(CONF_LAST_CLEANING_DURATION): sensor.sensor_schema(
+            unit_of_measurement=UNIT_MINUTE,
+            accuracy_decimals=0,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
     }
 )
 
@@ -160,3 +166,7 @@ async def to_code(config):
     if number_dust_bin_full_config := config.get(CONF_NUMBER_DUST_BIN_FULL):
         sens = await sensor.new_sensor(number_dust_bin_full_config)
         cg.add(parent.set_number_dust_bin_full_sensor(sens))
+
+    if last_cleaning_duration_config := config.get(CONF_LAST_CLEANING_DURATION):
+        sens = await sensor.new_sensor(last_cleaning_duration_config)
+        cg.add(parent.set_last_cleaning_duration_sensor(sens))

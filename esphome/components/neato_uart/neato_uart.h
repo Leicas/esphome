@@ -6,6 +6,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/components/time/real_time_clock.h"
 #include <vector>
 #include <string>
 
@@ -90,6 +91,16 @@ class NeatoUARTComponent : public Component, public uart::UARTDevice {
   void set_robot_serial_text_sensor(text_sensor::TextSensor *sensor) { this->robot_serial_text_sensor_ = sensor; }
   void set_robot_model_text_sensor(text_sensor::TextSensor *sensor) { this->robot_model_text_sensor_ = sensor; }
   void set_language_text_sensor(text_sensor::TextSensor *sensor) { this->language_text_sensor_ = sensor; }
+  void set_last_cleaning_time_text_sensor(text_sensor::TextSensor *sensor) {
+    this->last_cleaning_time_text_sensor_ = sensor;
+  }
+  void set_last_cleaning_type_text_sensor(text_sensor::TextSensor *sensor) {
+    this->last_cleaning_type_text_sensor_ = sensor;
+  }
+  void set_last_cleaning_duration_sensor(sensor::Sensor *sensor) {
+    this->last_cleaning_duration_sensor_ = sensor;
+  }
+  void set_time_id(time::RealTimeClock *time_id) { this->time_id_ = time_id; }
 
  protected:
   // UART reading and parsing
@@ -104,6 +115,7 @@ class NeatoUARTComponent : public Component, public uart::UARTDevice {
   void parse_get_version_(const std::vector<std::string> &lines);
   void parse_test_mode_(const std::vector<std::string> &lines);
   void parse_get_state_(const std::vector<std::string> &lines);
+  void handle_cleaning_state_change_(const std::string &new_state);
   void parse_get_user_settings_(const std::vector<std::string> &lines);
 
   // Helper functions
@@ -160,6 +172,16 @@ class NeatoUARTComponent : public Component, public uart::UARTDevice {
   text_sensor::TextSensor *robot_serial_text_sensor_{nullptr};
   text_sensor::TextSensor *robot_model_text_sensor_{nullptr};
   text_sensor::TextSensor *language_text_sensor_{nullptr};
+  text_sensor::TextSensor *last_cleaning_time_text_sensor_{nullptr};
+  text_sensor::TextSensor *last_cleaning_type_text_sensor_{nullptr};
+  sensor::Sensor *last_cleaning_duration_sensor_{nullptr};
+
+  // Time integration
+  time::RealTimeClock *time_id_{nullptr};
+
+  // Cleaning session tracking
+  uint64_t cleaning_start_time_{0};
+  std::string last_cleaning_type_stored_;
 };
 
 // Action templates
@@ -168,7 +190,7 @@ template<typename... Ts> class SendCommandAction : public Action<Ts...> {
   SendCommandAction(NeatoUARTComponent *parent) : parent_(parent) {}
   TEMPLATABLE_VALUE(std::string, command)
 
-  void play(Ts... x) override { this->parent_->send_command(this->command_.value(x...)); }
+  void play(const Ts &...x) override { this->parent_->send_command(this->command_.value(x...)); }
 
  protected:
   NeatoUARTComponent *parent_;
@@ -179,7 +201,7 @@ template<typename... Ts> class PlaySoundAction : public Action<Ts...> {
   PlaySoundAction(NeatoUARTComponent *parent) : parent_(parent) {}
   TEMPLATABLE_VALUE(uint8_t, sound_id)
 
-  void play(Ts... x) override { this->parent_->play_sound(this->sound_id_.value(x...)); }
+  void play(const Ts &...x) override { this->parent_->play_sound(this->sound_id_.value(x...)); }
 
  protected:
   NeatoUARTComponent *parent_;

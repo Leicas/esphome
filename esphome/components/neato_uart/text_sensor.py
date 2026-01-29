@@ -19,6 +19,8 @@ CONF_MAINBOARD_VERSION = "mainboard_version"
 CONF_ROBOT_SERIAL = "robot_serial"
 CONF_ROBOT_MODEL = "robot_model"
 CONF_LANGUAGE = "language"
+CONF_LAST_CLEANING_TIME = "last_cleaning_time"
+CONF_LAST_CLEANING_TYPE = "last_cleaning_type"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -40,6 +42,12 @@ CONFIG_SCHEMA = cv.Schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
         cv.Optional(CONF_LANGUAGE): text_sensor.text_sensor_schema(
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+        ),
+        cv.Optional(CONF_LAST_CLEANING_TIME): text_sensor.text_sensor_schema(
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC
+        ),
+        cv.Optional(CONF_LAST_CLEANING_TYPE): text_sensor.text_sensor_schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC
         ),
     }
@@ -85,3 +93,11 @@ async def to_code(config):
     if language_config := config.get(CONF_LANGUAGE):
         sens = await text_sensor.new_text_sensor(language_config)
         cg.add(parent.set_language_text_sensor(sens))
+
+    if last_cleaning_time_config := config.get(CONF_LAST_CLEANING_TIME):
+        sens = await text_sensor.new_text_sensor(last_cleaning_time_config)
+        cg.add(parent.set_last_cleaning_time_text_sensor(sens))
+
+    if last_cleaning_type_config := config.get(CONF_LAST_CLEANING_TYPE):
+        sens = await text_sensor.new_text_sensor(last_cleaning_type_config)
+        cg.add(parent.set_last_cleaning_type_text_sensor(sens))

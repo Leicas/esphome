@@ -2,7 +2,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation
-from esphome.components import uart
+from esphome.components import uart, time
 from esphome.const import CONF_ID
 
 CODEOWNERS = ["@leicas"]
@@ -21,11 +21,13 @@ PlaySoundAction = neato_uart_ns.class_("PlaySoundAction", automation.Action)
 CONF_NEATO_UART_ID = "neato_uart_id"
 CONF_COMMAND = "command"
 CONF_SOUND_ID = "sound_id"
+CONF_TIME_ID = "time_id"
 
 CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(NeatoUARTComponent),
+            cv.Optional(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -38,6 +40,10 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await uart.register_uart_device(var, config)
+
+    if CONF_TIME_ID in config:
+        time_id = await cg.get_variable(config[CONF_TIME_ID])
+        cg.add(var.set_time_id(time_id))
 
 
 @automation.register_action(

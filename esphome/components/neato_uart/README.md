@@ -8,8 +8,10 @@ This ESPHome component provides clean integration with Neato vacuum cleaners ove
 - **Clean YAML Configuration**: No more 300+ line lambdas in your YAML files
 - **Comprehensive Sensor Support**: Battery level, temperature, voltage, charging status, and more
 - **Status Monitoring**: Robot error, alert, UI state, and robot state tracking
+- **Cleaning Session Tracking**: Automatically detects when cleaning starts/stops and tracks duration
 - **Control Actions**: Send custom commands and play sounds
 - **ESP32-C6 Compatible**: Fully tested on ESP32-C6 with ESP-IDF framework
+- **Home Assistant Integration**: Supports time synchronization for accurate cleaning session timestamps
 
 ## Hardware Requirements
 
@@ -26,6 +28,10 @@ This component is built into the ESPHome distribution. Simply add it to your YAM
 ### Basic Setup
 
 ```yaml
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
 uart:
   id: uart_bus
   baud_rate: 115200
@@ -36,7 +42,32 @@ uart:
 neato_uart:
   id: neato_device
   uart_id: uart_bus
+  time_id: homeassistant_time  # Required for cleaning session tracking
 ```
+
+### Cleaning Session Tracking
+
+To track when the robot starts/stops cleaning, configure the cleaning-related text sensors:
+
+```yaml
+text_sensor:
+  - platform: neato_uart
+    neato_uart_id: neato_device
+    ui_state:
+      name: "UI State"
+    last_cleaning_time:
+      name: "Last Cleaning Time"  # When cleaning started
+    last_cleaning_type:
+      name: "Last Cleaning Type"  # "HOUSE" or "SPOT"
+
+sensor:
+  - platform: neato_uart
+    neato_uart_id: neato_device
+    last_cleaning_duration:
+      name: "Last Cleaning Duration"  # In minutes
+```
+
+The component automatically detects when the UI state changes to a cleaning state (house or spot cleaning) and tracks the session. When cleaning completes, it calculates the duration and publishes timestamps.
 
 ### Sensors
 
@@ -71,6 +102,7 @@ sensor:
 - `dirt_bin_alert` - Dirt bin alert interval (minutes)
 - `current_dirt_bin_runtime` - Current dirt bin runtime (seconds)
 - `number_dust_bin_full` - Count of full dust bin cleanings
+- `last_cleaning_duration` - Duration of last cleaning session in minutes (requires `time_id` configuration)
 
 ### Binary Sensors
 
@@ -124,6 +156,8 @@ text_sensor:
 - `robot_serial` - Robot serial number
 - `robot_model` - Robot model name
 - `language` - Current language setting
+- `last_cleaning_time` - Timestamp of when the last cleaning session started (requires `time_id` configuration)
+- `last_cleaning_type` - Type of last cleaning ("HOUSE" or "SPOT")
 
 ## Actions
 
@@ -173,21 +207,6 @@ button:
 ## Full Example
 
 See [example.yaml](example.yaml) for a complete working configuration.
-
-## Comparison with Lambda-based Approach
-
-**Before (with lambda):**
-- 300+ lines of C++ code in YAML
-- Difficult to maintain and debug
-- Hard to share and reuse
-- Poor IDE support
-
-**After (with component):**
-- Clean YAML configuration
-- Proper C++ implementation
-- Easy to maintain and extend
-- Full IDE support and type checking
-- Reusable across projects
 
 ## Troubleshooting
 
