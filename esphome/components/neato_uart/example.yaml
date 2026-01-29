@@ -1,0 +1,175 @@
+# Example ESPHome configuration for Neato vacuum using the neato_uart component
+# This replaces the massive lambda-based UART debug configuration with a clean component-based setup
+
+esp32:
+  variant: esp32c6
+  board: esp32-c6-devkitc-1
+  framework:
+    type: esp-idf
+
+esphome:
+  name: neato-vacuum
+  project: 
+    name: philip2809.neato-connected
+    version: "2.0.0"
+
+# WiFi configuration
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Enable logging (use USB Serial JTAG for ESP32-C6)
+logger:
+  baud_rate: 0  # Disable UART logging to avoid conflicts
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+# Enable OTA updates
+ota:
+  - platform: esphome
+
+# UART configuration - much simpler now!
+uart:
+  id: uart_bus
+  baud_rate: 115200
+  tx_pin: GPIO16  # Correct pins for ESP32-C6
+  rx_pin: GPIO17
+  rx_buffer_size: 4096
+
+# The Neato UART component - this replaces the entire debug lambda!
+neato_uart:
+  id: neato_device
+  uart_id: uart_bus
+
+# Define sensors using the component's platform
+sensor:
+  - platform: neato_uart
+    neato_uart_id: neato_device
+    fuel_percent:
+      name: "Battery Level"
+      id: battery_level
+    battery_temp:
+      name: "Battery Temperature"
+    battery_voltage:
+      name: "Battery Voltage"
+    external_voltage:
+      name: "Charger Voltage"
+    charger_mah:
+      name: "Charge mAh"
+    discharge_mah:
+      name: "Discharge mAh"
+    battery_cycles:
+      name: "Battery Cycles"
+    filter_change_time:
+      name: "Filter Change Time"
+    brush_change_time:
+      name: "Brush Change Time"
+
+# Binary sensors for status information
+binary_sensor:
+  - platform: neato_uart
+    neato_uart_id: neato_device
+    usb_connected:
+      name: "USB Connected"
+    battery_over_temp:
+      name: "Battery Over Temperature"
+    charging_active:
+      name: "Charging Active"
+    charging_enabled:
+      name: "Charging Enabled"
+    ext_power_present:
+      name: "External Power Present"
+
+# Text sensors for state and error information
+text_sensor:
+  - platform: neato_uart
+    neato_uart_id: neato_device
+    robot_error:
+      name: "Robot Error"
+    robot_alert:
+      name: "Robot Alert"
+    ui_state:
+      name: "UI State"
+      id: ui_state
+    robot_state:
+      name: "Robot State"
+    robot_model:
+      name: "Model"
+    robot_serial:
+      name: "Serial Number"
+    mainboard_version:
+      name: "Mainboard Version"
+
+# Buttons for vacuum control
+button:
+  - platform: template
+    name: "House Clean"
+    icon: mdi:home
+    on_press:
+      - neato_uart.send_command:
+          id: neato_device
+          command: "Clean"
+
+  - platform: template
+    name: "Spot Clean"
+    icon: mdi:target
+    on_press:
+      - neato_uart.send_command:
+          id: neato_device
+          command: "Clean Spot"
+
+  - platform: template
+    name: "Stop Cleaning"
+    icon: mdi:stop
+    on_press:
+      - neato_uart.send_command:
+          id: neato_device
+          command: "Clean Stop"
+
+  - platform: template
+    name: "Locate Robot"
+    icon: mdi:volume-high
+    on_press:
+      - neato_uart.play_sound:
+          id: neato_device
+          sound_id: 20
+
+  - platform: template
+    name: "Update Status"
+    icon: mdi:refresh
+    on_press:
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetErr"
+      - delay: 50ms
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetState"
+      - delay: 50ms
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetCharger"
+      - delay: 50ms
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetVersion"
+
+# Periodic status updates
+interval:
+  - interval: 2s
+    then:
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetErr"
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetState"
+  
+  - interval: 2min
+    then:
+      - neato_uart.send_command:
+          id: neato_device
+          command: "GetCharger"
