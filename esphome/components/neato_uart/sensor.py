@@ -4,6 +4,7 @@ import esphome.config_validation as cv
 from esphome.components import sensor
 from esphome.const import (
     CONF_ID,
+    CONF_BATTERY_VOLTAGE,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_TEMPERATURE,
     DEVICE_CLASS_VOLTAGE,
@@ -21,7 +22,6 @@ DEPENDENCIES = ["neato_uart"]
 
 CONF_FUEL_PERCENT = "fuel_percent"
 CONF_BATTERY_TEMP = "battery_temp"
-CONF_BATTERY_VOLTAGE = "battery_voltage"
 CONF_EXTERNAL_VOLTAGE = "external_voltage"
 CONF_CHARGER_MAH = "charger_mah"
 CONF_DISCHARGE_MAH = "discharge_mah"

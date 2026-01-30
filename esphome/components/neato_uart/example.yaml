@@ -9,7 +9,7 @@ esp32:
 
 esphome:
   name: neato-vacuum
-  project: 
+  project:
     name: philip2809.neato-connected
     version: "2.0.0"
 
@@ -179,7 +179,7 @@ interval:
       - neato_uart.send_command:
           id: neato_device
           command: "GetState"
-  
+
   - interval: 2min
     then:
       - neato_uart.send_command:

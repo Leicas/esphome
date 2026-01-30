@@ -7,6 +7,7 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/time/real_time_clock.h"
+#include "esphome/components/vacuum/vacuum.h"
 #include <vector>
 #include <string>
 
@@ -97,9 +98,7 @@ class NeatoUARTComponent : public Component, public uart::UARTDevice {
   void set_last_cleaning_type_text_sensor(text_sensor::TextSensor *sensor) {
     this->last_cleaning_type_text_sensor_ = sensor;
   }
-  void set_last_cleaning_duration_sensor(sensor::Sensor *sensor) {
-    this->last_cleaning_duration_sensor_ = sensor;
-  }
+  void set_last_cleaning_duration_sensor(sensor::Sensor *sensor) { this->last_cleaning_duration_sensor_ = sensor; }
   void set_time_id(time::RealTimeClock *time_id) { this->time_id_ = time_id; }
 
  protected:
@@ -202,6 +201,42 @@ template<typename... Ts> class PlaySoundAction : public Action<Ts...> {
   TEMPLATABLE_VALUE(uint8_t, sound_id)
 
   void play(const Ts &...x) override { this->parent_->play_sound(this->sound_id_.value(x...)); }
+
+ protected:
+  NeatoUARTComponent *parent_;
+};
+
+class NeatoVacuum : public vacuum::Vacuum, public Component {
+ public:
+  NeatoVacuum(NeatoUARTComponent *parent) : parent_(parent) {}
+
+  void setup() override {}
+  void dump_config() override {}
+  float get_setup_priority() const override { return setup_priority::DATA; }
+
+ protected:
+  void control(const vacuum::VacuumCall &call) override {
+    if (!call.get_state().has_value()) {
+      return;
+    }
+    switch (*call.get_state()) {
+      case vacuum::VACUUM_STATE_CLEANING:
+        this->parent_->send_command("Clean");
+        break;
+      case vacuum::VACUUM_STATE_IDLE:
+        this->parent_->send_command("Clean Stop");
+        break;
+      case vacuum::VACUUM_STATE_PAUSED:
+        this->parent_->send_command("Clean Pause");
+        break;
+      case vacuum::VACUUM_STATE_RETURNING:
+      case vacuum::VACUUM_STATE_DOCKING:
+        this->parent_->send_command("Clean GoBase");
+        break;
+      default:
+        break;
+    }
+  }
 
  protected:
   NeatoUARTComponent *parent_;

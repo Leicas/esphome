@@ -3,11 +3,11 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation
 from esphome.components import uart, time
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_COMMAND, CONF_TIME_ID
 
 CODEOWNERS = ["@leicas"]
 DEPENDENCIES = ["uart"]
-AUTO_LOAD = ["sensor", "binary_sensor", "text_sensor"]
+AUTO_LOAD = ["sensor", "binary_sensor", "text_sensor", "vacuum"]
 
 neato_uart_ns = cg.esphome_ns.namespace("neato_uart")
 NeatoUARTComponent = neato_uart_ns.class_(
@@ -19,9 +19,7 @@ SendCommandAction = neato_uart_ns.class_("SendCommandAction", automation.Action)
 PlaySoundAction = neato_uart_ns.class_("PlaySoundAction", automation.Action)
 
 CONF_NEATO_UART_ID = "neato_uart_id"
-CONF_COMMAND = "command"
 CONF_SOUND_ID = "sound_id"
-CONF_TIME_ID = "time_id"
 
 CONFIG_SCHEMA = (
     cv.Schema(
@@ -37,6 +35,7 @@ CONFIG_SCHEMA = (
 
 async def to_code(config):
     """Code generation for Neato UART component."""
+    cg.add_define("USE_VACUUM")
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await uart.register_uart_device(var, config)

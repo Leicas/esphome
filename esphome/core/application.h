@@ -58,6 +58,9 @@
 #ifdef USE_COVER
 #include "esphome/components/cover/cover.h"
 #endif
+#ifdef USE_VACUUM
+#include "esphome/components/vacuum/vacuum.h"
+#endif
 #ifdef USE_NUMBER
 #include "esphome/components/number/number.h"
 #endif
@@ -170,6 +173,10 @@ class Application {
 
 #ifdef USE_COVER
   void register_cover(cover::Cover *cover) { this->covers_.push_back(cover); }
+#endif
+
+#ifdef USE_VACUUM
+  void register_vacuum(vacuum::Vacuum *vacuum) { this->vacuums_.push_back(vacuum); }
 #endif
 
 #ifdef USE_CLIMATE
@@ -409,6 +416,10 @@ class Application {
   auto &get_covers() const { return this->covers_; }
   GET_ENTITY_METHOD(cover::Cover, cover, covers)
 #endif
+#ifdef USE_VACUUM
+  auto &get_vacuums() const { return this->vacuums_; }
+  GET_ENTITY_METHOD(vacuum::Vacuum, vacuum, vacuums)
+#endif
 #ifdef USE_LIGHT
   auto &get_lights() const { return this->lights_; }
   GET_ENTITY_METHOD(light::LightState, light, lights)
@@ -627,6 +638,9 @@ class Application {
 #endif
 #ifdef USE_COVER
   StaticVector<cover::Cover *, ESPHOME_ENTITY_COVER_COUNT> covers_{};
+#endif
+#ifdef USE_VACUUM
+  StaticVector<vacuum::Vacuum *, ESPHOME_ENTITY_VACUUM_COUNT> vacuums_{};
 #endif
 #ifdef USE_CLIMATE
   StaticVector<climate::Climate *, ESPHOME_ENTITY_CLIMATE_COUNT> climates_{};

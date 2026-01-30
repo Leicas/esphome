@@ -42,6 +42,9 @@ LIST_ENTITIES_HANDLER(lock, lock::Lock, ListEntitiesLockResponse)
 #ifdef USE_VALVE
 LIST_ENTITIES_HANDLER(valve, valve::Valve, ListEntitiesValveResponse)
 #endif
+#ifdef USE_VACUUM
+LIST_ENTITIES_HANDLER(vacuum, vacuum::Vacuum, ListEntitiesVacuumResponse)
+#endif
 #ifdef USE_CAMERA
 LIST_ENTITIES_HANDLER(camera, camera::Camera, ListEntitiesCameraResponse)
 #endif

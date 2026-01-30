@@ -300,14 +300,14 @@ void NeatoUARTComponent::handle_cleaning_state_change_(const std::string &new_st
     if (this->time_id_ != nullptr && this->time_id_->now().is_valid()) {
       this->cleaning_start_time_ = this->time_id_->now().timestamp;
     }
-    
+
     // Record cleaning type
     this->last_cleaning_type_stored_ = new_spot ? "SPOT" : "HOUSE";
-    
+
     if (this->last_cleaning_type_text_sensor_ != nullptr) {
       this->last_cleaning_type_text_sensor_->publish_state(this->last_cleaning_type_stored_);
     }
-    
+
     ESP_LOGD(TAG, "Cleaning started: %s", this->last_cleaning_type_stored_.c_str());
   }
   // Cleaning stopped
@@ -315,21 +315,21 @@ void NeatoUARTComponent::handle_cleaning_state_change_(const std::string &new_st
     if (this->cleaning_start_time_ > 0 && this->time_id_ != nullptr && this->time_id_->now().is_valid()) {
       uint64_t now_ts = this->time_id_->now().timestamp;
       uint32_t duration_min = (now_ts - this->cleaning_start_time_) / 60;
-      
+
       if (this->last_cleaning_duration_sensor_ != nullptr) {
         this->last_cleaning_duration_sensor_->publish_state(duration_min);
       }
-      
+
       // Format and publish last cleaning time
       if (this->last_cleaning_time_text_sensor_ != nullptr && this->time_id_ != nullptr) {
         ESPTime t = ESPTime::from_epoch_local(this->cleaning_start_time_);
         std::string ts = t.strftime("%Y-%m-%d %H:%M:%S");
         this->last_cleaning_time_text_sensor_->publish_state(ts);
       }
-      
+
       ESP_LOGD(TAG, "Cleaning stopped after %u minutes", duration_min);
     }
-    
+
     this->cleaning_start_time_ = 0;
   }
 }
