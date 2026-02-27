@@ -3,6 +3,11 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
+#ifdef USE_ESP32
+#include "esphome/components/uart/uart_component_esp_idf.h"
+#include <driver/uart.h>
+#endif
+
 #include <utility>
 
 namespace esphome {
@@ -64,6 +69,30 @@ void MR24HPC1Component::dump_config() {
 void MR24HPC1Component::setup() {
   this->check_uart_settings(115200);
 
+#ifdef USE_ESP32
+  // Send a UART break to force the sensor's UART hardware to resynchronize.
+  // During ESP32 boot, the TX pin floats, sending noise to the sensor which
+  // can put its UART parser in a stuck state.  A break (TX held LOW) forces
+  // the sensor to drop any partial frame and resync on the next valid data.
+  auto *idf_uart = static_cast<uart::IDFUARTComponent *>(this->parent_);
+  uart_port_t uart_num = static_cast<uart_port_t>(idf_uart->get_hw_serial_number());
+  // Invert TX line — idle becomes LOW, which is a continuous break condition
+  uart_set_line_inverse(uart_num, UART_SIGNAL_TXD_INV);
+  delay(100);
+  // Restore TX line — idle returns to HIGH, ending the break
+  uart_set_line_inverse(uart_num, 0);
+  delay(200);  // Give the sensor time to recover
+#endif
+
+  // Flush any garbage data received during boot / break
+  uint8_t byte;
+  while (this->available()) {
+    this->read_byte(&byte);
+  }
+
+  // Reset the sensor in case it's still in a bad state
+  this->send_query_(SET_RESTART, sizeof(SET_RESTART));
+
 #ifdef USE_NUMBER
   if (this->custom_mode_number_ != nullptr) {
     this->custom_mode_number_->publish_state(0);  // Zero out the custom mode
@@ -80,7 +109,8 @@ void MR24HPC1Component::setup() {
   }
 #endif
   this->set_custom_end_mode();
-  this->poll_time_base_func_check_ = true;
+  // Delay initial polling to give the sensor time to reboot after the restart command.
+  this->poll_time_base_func_check_ = false;
   this->check_dev_inf_sign_ = true;
   this->sg_start_query_data_ = STANDARD_FUNCTION_QUERY_PRODUCT_MODE;
   this->sg_data_len_ = 0;
