@@ -139,6 +139,70 @@ class Inkplate final : public display::DisplayBuffer, public i2c::I2CDevice {
     return true;
   }
 
+  // Load a 1-bit frame given as runs in physical framebuffer order. Each run is one
+  // byte: bit 7 is the colour (1 = black), the low seven bits are length - 1; low
+  // bits == 127 means the next uint16 (little endian) adds to a base length of 127.
+  // shown == false: the frame becomes the next image to display.
+  // shown == true: the frame is what the panel shows right now (the previous image,
+  // lost from RAM across deep sleep); loading it makes a partial update possible.
+  // Validation is completed before writing, so a malformed frame changes nothing.
+  bool load_native_bw_runs(const uint8_t *data, size_t length, bool shown) {
+    uint8_t *target = shown ? this->buffer_ : this->partial_buffer_;
+    if (this->greyscale_ || target == nullptr || data == nullptr)
+      return false;
+    const size_t pixels = static_cast<size_t>(this->get_width_internal()) * this->get_height_internal();
+    size_t total = 0;
+    for (size_t pos = 0; pos < length;) {
+      const uint8_t token = data[pos++];
+      size_t count = (token & 127) + 1;
+      if ((token & 127) == 127) {
+        if (length - pos < 2)
+          return false;
+        count = 127 + static_cast<size_t>(data[pos]) + (static_cast<size_t>(data[pos + 1]) << 8);
+        pos += 2;
+      }
+      if (count > pixels - total)
+        return false;
+      total += count;
+    }
+    if (total != pixels)
+      return false;
+
+    size_t pixel = 0;
+    size_t runs = 0;
+    for (size_t pos = 0; pos < length;) {
+      const uint8_t token = data[pos++];
+      const bool black = (token & 128) != 0;
+      size_t count = (token & 127) + 1;
+      if ((token & 127) == 127) {
+        count = 127 + static_cast<size_t>(data[pos]) + (static_cast<size_t>(data[pos + 1]) << 8);
+        pos += 2;
+      }
+      // Leading bits up to the next byte boundary, whole bytes, then trailing bits.
+      while (count > 0 && (pixel & 7) != 0) {
+        const uint8_t mask = PIXEL_MASK_LUT[pixel & 7];
+        target[pixel >> 3] = black ? (target[pixel >> 3] | mask) : (target[pixel >> 3] & ~mask);
+        pixel++;
+        count--;
+      }
+      const size_t whole = count >> 3;
+      memset(target + (pixel >> 3), black ? 0xFF : 0x00, whole);
+      pixel += whole << 3;
+      count -= whole << 3;
+      while (count > 0) {
+        const uint8_t mask = PIXEL_MASK_LUT[pixel & 7];
+        target[pixel >> 3] = black ? (target[pixel >> 3] | mask) : (target[pixel >> 3] & ~mask);
+        pixel++;
+        count--;
+      }
+      if ((++runs & 1023) == 0)
+        App.feed_wdt();
+    }
+    if (shown)
+      this->block_partial_ = false;
+    return true;
+  }
+
   void setup() override;
 
   uint8_t get_panel_state() { return this->panel_on_; }
